@@ -1,51 +1,49 @@
 
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Orbitron:wght@400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
-
 @layer base {
   :root {
-    --background: 218 23% 6%;
-    --foreground: 144 100% 50%;
+    --background: 217 19% 8%;
+    --foreground: 210 40% 98%;
 
-    --card: 220 23% 8%;
-    --card-foreground: 144 100% 50%;
+    --card: 217 19% 11%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 220 23% 8%;
-    --popover-foreground: 144 100% 50%;
+    --popover: 217 19% 11%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 144 100% 50%;
-    --primary-foreground: 218 23% 6%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 84% 5%;
 
-    --secondary: 340 75% 55%;
-    --secondary-foreground: 218 23% 6%;
+    --secondary: 217 19% 18%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 220 23% 15%;
-    --muted-foreground: 144 50% 40%;
+    --muted: 217 19% 15%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 340 75% 55%;
-    --accent-foreground: 218 23% 6%;
+    --accent: 262 83% 58%;
+    --accent-foreground: 210 40% 98%;
 
-    --destructive: 340 75% 55%;
-    --destructive-foreground: 218 23% 6%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 144 50% 20%;
-    --input: 220 23% 15%;
-    --ring: 144 100% 50%;
+    --border: 217 19% 22%;
+    --input: 217 19% 15%;
+    --ring: 217 91% 60%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 220 23% 8%;
-    --sidebar-foreground: 144 100% 50%;
-    --sidebar-primary: 144 100% 50%;
-    --sidebar-primary-foreground: 218 23% 6%;
-    --sidebar-accent: 220 23% 15%;
-    --sidebar-accent-foreground: 144 100% 50%;
-    --sidebar-border: 144 50% 20%;
-    --sidebar-ring: 144 100% 50%;
+    --sidebar-background: 217 19% 11%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 222 84% 5%;
+    --sidebar-accent: 217 19% 15%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 19% 22%;
+    --sidebar-ring: 217 91% 60%;
   }
 }
 
@@ -55,73 +53,62 @@
   }
 
   body {
-    @apply bg-cyber-bg text-cyber-green font-mono;
-    background-image: 
-      radial-gradient(circle at 20% 50%, rgba(0, 255, 0, 0.1) 0%, transparent 20%),
-      radial-gradient(circle at 80% 20%, rgba(255, 0, 64, 0.1) 0%, transparent 20%),
-      radial-gradient(circle at 40% 80%, rgba(0, 204, 255, 0.1) 0%, transparent 20%);
+    @apply bg-netra-bg text-netra-text font-sans;
+    background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
     background-attachment: fixed;
   }
 }
 
 @layer components {
-  .cyber-panel {
-    @apply bg-cyber-bg-secondary border border-cyber-green/30 rounded-lg p-4;
-    background: linear-gradient(135deg, rgba(26, 26, 46, 0.8) 0%, rgba(10, 10, 15, 0.9) 100%);
+  .netra-panel {
+    @apply bg-netra-bg-secondary border border-netra-border rounded-xl p-6;
+    background: linear-gradient(135deg, rgba(30, 35, 40, 0.95) 0%, rgba(42, 47, 54, 0.95) 100%);
+    backdrop-filter: blur(10px);
     box-shadow: 
-      0 0 10px rgba(0, 255, 0, 0.2),
-      inset 0 0 10px rgba(0, 255, 0, 0.05);
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
-  .cyber-button {
-    @apply bg-transparent border border-cyber-green text-cyber-green px-4 py-2 rounded transition-all duration-300;
-    @apply hover:bg-cyber-green hover:text-cyber-bg hover:shadow-[0_0_20px_rgba(0,255,0,0.5)];
+  .netra-button {
+    @apply bg-netra-primary text-white px-6 py-3 rounded-lg font-medium transition-all duration-300;
+    @apply hover:bg-netra-primary-light hover:shadow-lg hover:shadow-netra-primary/25;
+    @apply active:scale-95;
   }
 
-  .cyber-button-danger {
-    @apply bg-transparent border border-cyber-red text-cyber-red px-4 py-2 rounded transition-all duration-300;
-    @apply hover:bg-cyber-red hover:text-white hover:shadow-[0_0_20px_rgba(255,0,64,0.5)];
+  .netra-button-secondary {
+    @apply bg-transparent border border-netra-border text-netra-text px-6 py-3 rounded-lg font-medium transition-all duration-300;
+    @apply hover:bg-netra-bg-tertiary hover:border-netra-primary;
   }
 
-  .matrix-bg {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: -1;
-    opacity: 0.1;
+  .netra-button-danger {
+    @apply bg-netra-danger text-white px-6 py-3 rounded-lg font-medium transition-all duration-300;
+    @apply hover:bg-red-600 hover:shadow-lg hover:shadow-netra-danger/25;
+  }
+
+  .status-indicator {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .status-active {
+    @apply bg-netra-success/20 text-netra-success border border-netra-success/30;
+  }
+
+  .status-warning {
+    @apply bg-netra-warning/20 text-netra-warning border border-netra-warning/30;
+  }
+
+  .status-danger {
+    @apply bg-netra-danger/20 text-netra-danger border border-netra-danger/30;
   }
 
   .terminal-cursor::after {
-    content: '█';
-    @apply animate-blink text-cyber-green;
+    content: '|';
+    @apply animate-pulse text-netra-primary;
   }
 
-  .glitch-text {
-    position: relative;
-  }
-
-  .glitch-text::before,
-  .glitch-text::after {
-    content: attr(data-text);
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-  }
-
-  .glitch-text::before {
-    color: #ff0040;
-    animation: glitch 0.3s infinite;
-    clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
-  }
-
-  .glitch-text::after {
-    color: #00ccff;
-    animation: glitch 0.3s infinite reverse;
-    clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+  .glass-effect {
+    background: rgba(30, 35, 40, 0.8);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 }

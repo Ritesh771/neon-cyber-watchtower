@@ -22,29 +22,30 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* System Status Bar */}
+      {/* System Metrics */}
       <motion.div 
-        className="cyber-panel"
+        className="netra-panel"
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3 }}
       >
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-          <div>
-            <div className="text-2xl font-bold text-cyber-green">24/7</div>
-            <div className="text-sm text-cyber-green/70">MONITORING</div>
+        <h3 className="text-lg font-semibold text-netra-text mb-6">System Performance</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-netra-success mb-2">24/7</div>
+            <div className="text-sm text-netra-text-secondary uppercase tracking-wide">Monitoring</div>
           </div>
-          <div>
-            <div className="text-2xl font-bold text-cyber-blue">98.7%</div>
-            <div className="text-sm text-cyber-green/70">ACCURACY</div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-netra-primary mb-2">98.7%</div>
+            <div className="text-sm text-netra-text-secondary uppercase tracking-wide">Accuracy</div>
           </div>
-          <div>
-            <div className="text-2xl font-bold text-cyber-yellow">15.2ms</div>
-            <div className="text-sm text-cyber-green/70">RESPONSE TIME</div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-netra-warning mb-2">15.2ms</div>
+            <div className="text-sm text-netra-text-secondary uppercase tracking-wide">Response Time</div>
           </div>
-          <div>
-            <div className="text-2xl font-bold text-cyber-red">2</div>
-            <div className="text-sm text-cyber-green/70">ACTIVE THREATS</div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-netra-danger mb-2">2</div>
+            <div className="text-sm text-netra-text-secondary uppercase tracking-wide">Active Threats</div>
           </div>
         </div>
       </motion.div>
