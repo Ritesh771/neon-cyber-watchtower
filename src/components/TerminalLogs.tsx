@@ -1,51 +1,84 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Terminal, X } from 'lucide-react';
+import { Terminal, X, AlertCircle } from 'lucide-react';
 
 interface LogEntry {
   id: string;
   timestamp: string;
   level: 'info' | 'warning' | 'error' | 'success';
   message: string;
+  details?: any;
 }
 
 const TerminalLogs = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'error' | 'connecting'>('connecting');
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const intervalRef = useRef<NodeJS.Timeout>();
 
-  const sampleLogs = [
-    { level: 'info', message: 'System initialized successfully' },
-    { level: 'success', message: 'Camera connection established: CAM-01' },
-    { level: 'info', message: 'AI model loaded: YOLOv8-detection' },
-    { level: 'warning', message: 'Suspicious object detected: knife' },
-    { level: 'error', message: 'ALERT: Weapon identified in frame 1247' },
-    { level: 'info', message: 'Notification sent to security team' },
-    { level: 'success', message: 'Evidence snapshot saved: evidence_001.jpg' },
-    { level: 'warning', message: 'Motion detected in restricted area' },
-    { level: 'error', message: 'CRITICAL: Firearm detected - authorities notified' },
-    { level: 'info', message: 'System scan completed - 0 active threats' },
-  ];
+  const BACKEND_URL = 'http://localhost:8000';
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const randomLog = sampleLogs[Math.floor(Math.random() * sampleLogs.length)];
-      const newLog: LogEntry = {
-        id: Date.now().toString(),
-        timestamp: new Date().toLocaleTimeString(),
-        level: randomLog.level as 'info' | 'warning' | 'error' | 'success',
-        message: randomLog.message,
-      };
-
-      setLogs(prev => [...prev.slice(-20), newLog]);
-    }, 3000);
-
-    return () => clearInterval(interval);
+    fetchLogs();
+    
+    // Poll for new logs every 2 seconds
+    intervalRef.current = setInterval(fetchLogs, 2000);
+    
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, []);
 
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
+
+  const fetchLogs = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/logs`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setConnectionStatus('connected');
+        
+        // Transform backend logs to our format
+        const formattedLogs = data.logs?.map((log: any, index: number) => ({
+          id: `${log.timestamp}_${index}`,
+          timestamp: new Date(log.timestamp).toLocaleTimeString(),
+          level: getLogLevel(log.alert_type || log.type),
+          message: formatLogMessage(log),
+          details: log
+        })) || [];
+        
+        setLogs(formattedLogs);
+      } else {
+        setConnectionStatus('error');
+      }
+    } catch (error) {
+      console.error('Failed to fetch logs:', error);
+      setConnectionStatus('error');
+    }
+  };
+
+  const getLogLevel = (alertType: string): 'info' | 'warning' | 'error' | 'success' => {
+    if (!alertType) return 'info';
+    
+    const type = alertType.toLowerCase();
+    if (type.includes('weapon') || type.includes('gun') || type.includes('knife')) return 'error';
+    if (type.includes('suspicious') || type.includes('anomaly')) return 'warning';
+    if (type.includes('normal') || type.includes('safe')) return 'success';
+    return 'info';
+  };
+
+  const formatLogMessage = (log: any): string => {
+    if (log.alert_type && log.details) {
+      return `${log.alert_type.toUpperCase()}: ${log.details.description || 'Detection event'}`;
+    }
+    if (log.message) return log.message;
+    if (log.type) return `${log.type.toUpperCase()}: Detection event`;
+    return 'System log entry';
+  };
 
   const getLevelColor = (level: string) => {
     switch (level) {
@@ -58,9 +91,9 @@ const TerminalLogs = () => {
 
   const getLevelPrefix = (level: string) => {
     switch (level) {
-      case 'error': return '[ERROR]';
+      case 'error': return '[ALERT]';
       case 'warning': return '[WARN]';
-      case 'success': return '[SUCCESS]';
+      case 'success': return '[SAFE]';
       default: return '[INFO]';
     }
   };
@@ -75,23 +108,50 @@ const TerminalLogs = () => {
         <h3 className="text-lg font-semibold text-netra-text flex items-center">
           <Terminal className="w-5 h-5 mr-2 text-netra-primary" />
           Detection Logs
+          <div className={`ml-3 w-2 h-2 rounded-full ${
+            connectionStatus === 'connected' ? 'bg-netra-success animate-pulse' :
+            connectionStatus === 'connecting' ? 'bg-netra-warning animate-pulse' :
+            'bg-netra-danger'
+          }`} />
         </h3>
-        <button 
-          onClick={() => setLogs([])}
-          className="flex items-center space-x-2 text-netra-text-secondary hover:text-netra-danger transition-colors"
-        >
-          <X className="w-4 h-4" />
-          <span className="text-sm">Clear</span>
-        </button>
+        <div className="flex items-center space-x-4">
+          {connectionStatus === 'error' && (
+            <div className="flex items-center text-netra-danger text-xs">
+              <AlertCircle className="w-3 h-3 mr-1" />
+              Backend Offline
+            </div>
+          )}
+          <button 
+            onClick={() => setLogs([])}
+            className="flex items-center space-x-2 text-netra-text-secondary hover:text-netra-danger transition-colors"
+          >
+            <X className="w-4 h-4" />
+            <span className="text-sm">Clear</span>
+          </button>
+        </div>
       </div>
 
       <div className="bg-netra-bg rounded-xl border border-netra-border p-4 h-80 overflow-y-auto font-mono text-sm">
         <div className="text-netra-primary mb-2 font-medium">
-          Netra Detection System v2.1 - Logging initiated...
+          Netra Detection System v2.1 - Backend Connected: {BACKEND_URL}
         </div>
         <div className="text-netra-text-muted mb-4 border-b border-netra-border pb-2">
           Real-time threat detection and analysis
         </div>
+
+        {connectionStatus === 'error' && (
+          <div className="text-netra-danger text-center py-4">
+            <AlertCircle className="w-8 h-8 mx-auto mb-2" />
+            <div>Unable to connect to backend</div>
+            <div className="text-xs">Make sure the backend is running on {BACKEND_URL}</div>
+          </div>
+        )}
+
+        {logs.length === 0 && connectionStatus === 'connected' && (
+          <div className="text-netra-text-muted text-center py-4">
+            No logs available. System monitoring...
+          </div>
+        )}
 
         {logs.map((log, index) => (
           <motion.div

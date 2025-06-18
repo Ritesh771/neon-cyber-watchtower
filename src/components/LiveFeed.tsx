@@ -1,141 +1,173 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Video, Camera, AlertTriangle } from 'lucide-react';
+import { Video, Camera, AlertTriangle, RefreshCw } from 'lucide-react';
 
 const LiveFeed = () => {
   const [isStreamActive, setIsStreamActive] = useState(false);
-  const [detectedObjects, setDetectedObjects] = useState<string[]>([]);
+  const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const [lastUpdate, setLastUpdate] = useState<string>('');
+  const imgRef = useRef<HTMLImageElement>(null);
+  const intervalRef = useRef<NodeJS.Timeout>();
+
+  const BACKEND_URL = 'http://localhost:8000';
 
   useEffect(() => {
-    // Simulate real-time object detection
-    const interval = setInterval(() => {
-      const objects = ['person', 'car', 'bag', 'knife', 'gun'];
-      const randomObjects = objects.slice(0, Math.floor(Math.random() * 3) + 1);
-      setDetectedObjects(randomObjects);
-    }, 3000);
+    if (isStreamActive) {
+      startStream();
+    } else {
+      stopStream();
+    }
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => stopStream();
+  }, [isStreamActive]);
 
-  const getDangerLevel = (object: string) => {
-    const dangerous = ['knife', 'gun', 'weapon'];
-    return dangerous.includes(object) ? 'danger' : 'safe';
+  const startStream = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    
+    setConnectionStatus('connecting');
+    
+    intervalRef.current = setInterval(async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/frame`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'image/jpeg',
+          },
+        });
+
+        if (response.ok) {
+          const blob = await response.blob();
+          const imageUrl = URL.createObjectURL(blob);
+          
+          if (imgRef.current) {
+            imgRef.current.src = imageUrl;
+            setConnectionStatus('connected');
+            setLastUpdate(new Date().toLocaleTimeString());
+          }
+        } else {
+          setConnectionStatus('error');
+        }
+      } catch (error) {
+        console.error('Failed to fetch frame:', error);
+        setConnectionStatus('error');
+      }
+    }, 100); // Update every 100ms for smooth video
+  };
+
+  const stopStream = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = undefined;
+    }
+    setConnectionStatus('disconnected');
+  };
+
+  const getStatusColor = () => {
+    switch (connectionStatus) {
+      case 'connected': return 'text-netra-success';
+      case 'connecting': return 'text-netra-warning';
+      case 'error': return 'text-netra-danger';
+      default: return 'text-netra-text-secondary';
+    }
+  };
+
+  const getStatusText = () => {
+    switch (connectionStatus) {
+      case 'connected': return 'LIVE';
+      case 'connecting': return 'CONNECTING...';
+      case 'error': return 'CONNECTION ERROR';
+      default: return 'OFFLINE';
+    }
   };
 
   return (
     <div className="space-y-6">
       {/* Video Feed */}
       <motion.div 
-        className="cyber-panel"
+        className="netra-panel"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-cyber-green flex items-center">
-            <Video className="w-5 h-5 mr-2" />
+          <h3 className="text-lg font-semibold text-netra-text flex items-center">
+            <Video className="w-5 h-5 mr-2 text-netra-primary" />
             LIVE SURVEILLANCE FEED
           </h3>
-          <div className="flex items-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${isStreamActive ? 'bg-cyber-green animate-pulse' : 'bg-cyber-red'}`} />
-            <span className="text-sm">{isStreamActive ? 'ACTIVE' : 'OFFLINE'}</span>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${
+                connectionStatus === 'connected' ? 'bg-netra-success animate-pulse' : 
+                connectionStatus === 'connecting' ? 'bg-netra-warning animate-pulse' : 
+                'bg-netra-danger'
+              }`} />
+              <span className={`text-sm ${getStatusColor()}`}>{getStatusText()}</span>
+            </div>
+            {lastUpdate && (
+              <span className="text-xs text-netra-text-secondary">
+                Last update: {lastUpdate}
+              </span>
+            )}
           </div>
         </div>
 
-        <div className="relative aspect-video bg-black rounded border border-cyber-green/30 overflow-hidden">
-          {/* Simulated video feed */}
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-900 to-black flex items-center justify-center">
-            <Camera className="w-16 h-16 text-cyber-green/30" />
-          </div>
+        <div className="relative aspect-video bg-netra-bg rounded border border-netra-border overflow-hidden">
+          {/* Live video stream */}
+          <img
+            ref={imgRef}
+            alt="Live Feed"
+            className="w-full h-full object-contain"
+            style={{ display: isStreamActive ? 'block' : 'none' }}
+          />
+          
+          {/* Placeholder when stream is off */}
+          {!isStreamActive && (
+            <div className="absolute inset-0 bg-gradient-to-br from-netra-bg-secondary to-netra-bg flex items-center justify-center">
+              <Camera className="w-16 h-16 text-netra-text-secondary" />
+            </div>
+          )}
           
           {/* Stream overlay */}
-          <div className="absolute top-4 left-4 bg-black/50 px-2 py-1 rounded text-xs text-cyber-green">
-            CAM-01 | 192.168.1.100:8080
+          <div className="absolute top-4 left-4 bg-black/70 px-3 py-1 rounded text-xs text-netra-success">
+            CAM-01 | Backend: {BACKEND_URL}
           </div>
           
-          {/* Detection overlays */}
-          {detectedObjects.map((object, index) => (
-            <motion.div
-              key={`${object}-${index}`}
-              className={`absolute border-2 ${
-                getDangerLevel(object) === 'danger' 
-                  ? 'border-cyber-red bg-cyber-red/20' 
-                  : 'border-cyber-green bg-cyber-green/20'
-              } rounded`}
-              style={{
-                top: `${20 + index * 15}%`,
-                left: `${30 + index * 20}%`,
-                width: '100px',
-                height: '80px',
-              }}
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 300 }}
-            >
-              <div className="absolute -top-6 left-0 text-xs px-1 py-0.5 bg-black/70 rounded">
-                {object}
+          {/* Connection status overlay */}
+          {connectionStatus === 'error' && (
+            <div className="absolute inset-0 bg-netra-danger/20 flex items-center justify-center">
+              <div className="text-center text-netra-danger">
+                <AlertTriangle className="w-12 h-12 mx-auto mb-2" />
+                <div className="text-sm font-medium">Backend Connection Failed</div>
+                <div className="text-xs">Check if backend is running on {BACKEND_URL}</div>
               </div>
-            </motion.div>
-          ))}
-
-          {/* Scanning effect */}
-          <motion.div 
-            className="absolute inset-0 border-t-2 border-cyber-green/50"
-            animate={{ y: ['0%', '100%'] }}
-            transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
-          />
+            </div>
+          )}
         </div>
 
-        <motion.button
-          onClick={() => setIsStreamActive(!isStreamActive)}
-          className={`mt-4 cyber-button ${isStreamActive ? 'cyber-button-danger' : ''}`}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          {isStreamActive ? 'STOP STREAM' : 'START STREAM'}
-        </motion.button>
-      </motion.div>
-
-      {/* Detection Status */}
-      <motion.div 
-        className="cyber-panel"
-        initial={{ y: 50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2 }}
-      >
-        <h3 className="text-lg font-semibold text-cyber-green mb-4 flex items-center">
-          <AlertTriangle className="w-5 h-5 mr-2" />
-          THREAT DETECTION STATUS
-        </h3>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {detectedObjects.map((object, index) => (
-            <motion.div
-              key={`status-${object}-${index}`}
-              className={`p-3 rounded border ${
-                getDangerLevel(object) === 'danger'
-                  ? 'border-cyber-red bg-cyber-red/10'
-                  : 'border-cyber-green bg-cyber-green/10'
-              }`}
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: index * 0.1 }}
+        <div className="flex space-x-4 mt-4">
+          <motion.button
+            onClick={() => setIsStreamActive(!isStreamActive)}
+            className={`netra-button ${isStreamActive ? 'netra-button-danger' : ''}`}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            {isStreamActive ? 'STOP STREAM' : 'START STREAM'}
+          </motion.button>
+          
+          {isStreamActive && (
+            <motion.button
+              onClick={() => {
+                stopStream();
+                setTimeout(startStream, 500);
+              }}
+              className="netra-button-secondary flex items-center space-x-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <div className="text-center">
-                <div className={`text-2xl mb-2 ${
-                  getDangerLevel(object) === 'danger' ? 'text-cyber-red' : 'text-cyber-green'
-                }`}>
-                  {getDangerLevel(object) === 'danger' ? '⚠️' : '✅'}
-                </div>
-                <div className="text-sm font-medium uppercase">{object}</div>
-                <div className={`text-xs mt-1 ${
-                  getDangerLevel(object) === 'danger' ? 'text-cyber-red' : 'text-cyber-green'
-                }`}>
-                  {getDangerLevel(object) === 'danger' ? 'THREAT' : 'SAFE'}
-                </div>
-              </div>
-            </motion.div>
-          ))}
+              <RefreshCw className="w-4 h-4" />
+              <span>RECONNECT</span>
+            </motion.button>
+          )}
         </div>
       </motion.div>
     </div>
