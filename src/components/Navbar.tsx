@@ -1,9 +1,23 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Bell, Shield } from 'lucide-react';
 
-const Navbar = () => {
+interface NavbarProps {
+  onNotificationClick?: () => void;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ onNotificationClick }) => {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <motion.nav 
       initial={{ y: -50, opacity: 0 }}
@@ -29,10 +43,11 @@ const Navbar = () => {
         </motion.div>
         
         <div className="flex items-center space-x-6">
-          <motion.div 
+          <motion.button 
             className="relative"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
+            onClick={onNotificationClick}
           >
             <Bell className="w-5 h-5 text-netra-text-secondary hover:text-netra-primary transition-colors cursor-pointer" />
             <motion.div 
@@ -40,14 +55,14 @@ const Navbar = () => {
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ repeat: Infinity, duration: 2 }}
             />
-          </motion.div>
+          </motion.button>
           
           <div className="text-sm">
             <div className="status-indicator status-active">
               SYSTEM ACTIVE
             </div>
             <div className="text-netra-text-muted text-xs mt-1">
-              {new Date().toLocaleTimeString()}
+              {currentTime.toLocaleTimeString()}
             </div>
           </div>
         </div>
