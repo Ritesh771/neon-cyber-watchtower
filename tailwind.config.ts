@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,12 +62,27 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				cyber: {
+					bg: '#0a0a0f',
+					'bg-secondary': '#1a1a2e',
+					green: '#00ff00',
+					'green-dark': '#00cc00',
+					red: '#ff0040',
+					'red-dark': '#cc0030',
+					blue: '#00ccff',
+					purple: '#cc00ff',
+					yellow: '#ffff00'
 				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
+			},
+			fontFamily: {
+				mono: ['JetBrains Mono', 'Consolas', 'Monaco', 'Courier New', 'monospace'],
+				cyber: ['Orbitron', 'JetBrains Mono', 'monospace']
 			},
 			keyframes: {
 				'accordion-down': {
@@ -84,11 +100,53 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'glow-pulse': {
+					'0%, 100%': {
+						boxShadow: '0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor'
+					},
+					'50%': {
+						boxShadow: '0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor'
+					}
+				},
+				'text-glow': {
+					'0%, 100%': {
+						textShadow: '0 0 5px currentColor, 0 0 10px currentColor'
+					},
+					'50%': {
+						textShadow: '0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor'
+					}
+				},
+				'glitch': {
+					'0%': { transform: 'translate(0)' },
+					'10%': { transform: 'translate(-2px, 2px)' },
+					'20%': { transform: 'translate(-2px, -2px)' },
+					'30%': { transform: 'translate(2px, 2px)' },
+					'40%': { transform: 'translate(2px, -2px)' },
+					'50%': { transform: 'translate(-2px, 2px)' },
+					'60%': { transform: 'translate(-2px, -2px)' },
+					'70%': { transform: 'translate(2px, 2px)' },
+					'80%': { transform: 'translate(-2px, -2px)' },
+					'90%': { transform: 'translate(2px, 2px)' },
+					'100%': { transform: 'translate(0)' }
+				},
+				'matrix-rain': {
+					'0%': { transform: 'translateY(-100vh)' },
+					'100%': { transform: 'translateY(100vh)' }
+				},
+				'blink': {
+					'0%, 50%': { opacity: '1' },
+					'51%, 100%': { opacity: '0' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
+				'text-glow': 'text-glow 2s ease-in-out infinite',
+				'glitch': 'glitch 0.5s infinite',
+				'matrix-rain': 'matrix-rain 3s linear infinite',
+				'blink': 'blink 1s infinite'
 			}
 		}
 	},

@@ -1,0 +1,47 @@
+
+{
+  "logs": [
+    {
+      "timestamp": "2024-01-15T10:30:45Z",
+      "level": "info",
+      "message": "System initialization complete"
+    },
+    {
+      "timestamp": "2024-01-15T10:31:12Z",
+      "level": "success",
+      "message": "Camera feed established: CAM-01"
+    },
+    {
+      "timestamp": "2024-01-15T10:31:45Z",
+      "level": "info",
+      "message": "AI model loaded: YOLOv8-crime-detection"
+    },
+    {
+      "timestamp": "2024-01-15T10:32:30Z",
+      "level": "warning",
+      "message": "Motion detected in restricted area"
+    },
+    {
+      "timestamp": "2024-01-15T10:33:15Z",
+      "level": "error",
+      "message": "CRITICAL: Weapon detected in frame 1247"
+    },
+    {
+      "timestamp": "2024-01-15T10:33:16Z",
+      "level": "info",
+      "message": "Alert sent to authorities via Telegram"
+    },
+    {
+      "timestamp": "2024-01-15T10:34:00Z",
+      "level": "success",
+      "message": "Evidence snapshot saved: evidence_001.jpg"
+    }
+  ],
+  "detectionData": {
+    "totalScans": 15247,
+    "threatsDetected": 23,
+    "falsePositives": 2,
+    "accuracy": 98.7,
+    "lastUpdate": "2024-01-15T10:34:30Z"
+  }
+}
