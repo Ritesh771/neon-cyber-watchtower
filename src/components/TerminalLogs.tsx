@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Terminal, X, AlertCircle } from 'lucide-react';
+import { Terminal, X, AlertCircle, Download } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface LogEntry {
   id: string;
@@ -14,25 +15,26 @@ interface LogEntry {
 const TerminalLogs = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'error' | 'connecting'>('connecting');
+  const [autoScroll, setAutoScroll] = useState(true);
   const logsEndRef = useRef<HTMLDivElement>(null);
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const logsContainerRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   const BACKEND_URL = 'http://localhost:8000';
 
   useEffect(() => {
     fetchLogs();
     
-    // Poll for new logs every 2 seconds
-    intervalRef.current = setInterval(fetchLogs, 2000);
+    const interval = setInterval(fetchLogs, 2000);
     
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [logs]);
+    if (autoScroll) {
+      logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [logs, autoScroll]);
 
   const fetchLogs = async () => {
     try {
@@ -42,16 +44,17 @@ const TerminalLogs = () => {
         const data = await response.json();
         setConnectionStatus('connected');
         
-        // Transform backend logs to our format
-        const formattedLogs = data.logs?.map((log: any, index: number) => ({
-          id: `${log.timestamp}_${index}`,
-          timestamp: new Date(log.timestamp).toLocaleTimeString(),
-          level: getLogLevel(log.alert_type || log.type),
-          message: formatLogMessage(log),
-          details: log
-        })) || [];
-        
-        setLogs(formattedLogs);
+        if (data.logs && Array.isArray(data.logs)) {
+          const formattedLogs = data.logs.map((log: any, index: number) => ({
+            id: `${log.timestamp}_${index}`,
+            timestamp: new Date(log.timestamp).toLocaleTimeString(),
+            level: getLogLevel(log.alert_type || log.type),
+            message: formatLogMessage(log),
+            details: log
+          }));
+          
+          setLogs(formattedLogs);
+        }
       } else {
         setConnectionStatus('error');
       }
@@ -98,6 +101,46 @@ const TerminalLogs = () => {
     }
   };
 
+  const clearLogs = () => {
+    setLogs([]);
+    toast({
+      title: "Logs Cleared",
+      description: "All detection logs have been cleared from the panel",
+    });
+  };
+
+  const exportLogs = () => {
+    const logData = logs.map(log => ({
+      timestamp: log.timestamp,
+      level: log.level,
+      message: log.message,
+      details: log.details
+    }));
+    
+    const blob = new Blob([JSON.stringify(logData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `netra-logs-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Logs Exported",
+      description: "Detection logs have been downloaded as JSON file",
+    });
+  };
+
+  const handleScroll = () => {
+    if (logsContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = logsContainerRef.current;
+      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10;
+      setAutoScroll(isAtBottom);
+    }
+  };
+
   return (
     <motion.div 
       className="netra-panel h-96"
@@ -114,7 +157,7 @@ const TerminalLogs = () => {
             'bg-netra-danger'
           }`} />
         </h3>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
           {connectionStatus === 'error' && (
             <div className="flex items-center text-netra-danger text-xs">
               <AlertCircle className="w-3 h-3 mr-1" />
@@ -122,16 +165,28 @@ const TerminalLogs = () => {
             </div>
           )}
           <button 
-            onClick={() => setLogs([])}
-            className="flex items-center space-x-2 text-netra-text-secondary hover:text-netra-danger transition-colors"
+            onClick={exportLogs}
+            className="flex items-center space-x-1 text-netra-text-secondary hover:text-netra-primary transition-colors text-sm px-2 py-1 rounded"
+            disabled={logs.length === 0}
           >
-            <X className="w-4 h-4" />
-            <span className="text-sm">Clear</span>
+            <Download className="w-3 h-3" />
+            <span>Export</span>
+          </button>
+          <button 
+            onClick={clearLogs}
+            className="flex items-center space-x-1 text-netra-text-secondary hover:text-netra-danger transition-colors text-sm px-2 py-1 rounded"
+          >
+            <X className="w-3 h-3" />
+            <span>Clear</span>
           </button>
         </div>
       </div>
 
-      <div className="bg-netra-bg rounded-xl border border-netra-border p-4 h-80 overflow-y-auto font-mono text-sm">
+      <div 
+        ref={logsContainerRef}
+        className="bg-netra-bg rounded-xl border border-netra-border p-4 h-80 overflow-y-auto font-mono text-sm"
+        onScroll={handleScroll}
+      >
         <div className="text-netra-primary mb-2 font-medium">
           Netra Detection System v2.1 - Backend Connected: {BACKEND_URL}
         </div>
@@ -178,6 +233,20 @@ const TerminalLogs = () => {
         
         <div ref={logsEndRef} />
       </div>
+
+      {!autoScroll && (
+        <motion.button
+          onClick={() => {
+            setAutoScroll(true);
+            logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }}
+          className="absolute bottom-4 right-4 bg-netra-primary text-white px-3 py-1 rounded text-xs"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          Scroll to bottom
+        </motion.button>
+      )}
     </motion.div>
   );
 };

@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, X, Bell, AlertCircle } from 'lucide-react';
+import { AlertTriangle, X, Bell, AlertCircle, Volume2, VolumeX } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface Alert {
   id: string;
@@ -18,25 +19,34 @@ const AlertPanel = () => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'error' | 'connecting'>('connecting');
   const [lastAlertCount, setLastAlertCount] = useState(0);
+  const { toast } = useToast();
 
   const BACKEND_URL = 'http://localhost:8000';
 
   useEffect(() => {
     fetchAlerts();
     
-    // Poll for new alerts every 3 seconds
     const interval = setInterval(fetchAlerts, 3000);
     
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
-    // Play sound when new alerts are added
     if (alerts.length > lastAlertCount && soundEnabled && lastAlertCount > 0) {
       playAlertSound();
+      
+      // Show toast for new alert
+      const newAlert = alerts[0];
+      if (newAlert) {
+        toast({
+          title: `${newAlert.severity.toUpperCase()} PRIORITY ALERT`,
+          description: newAlert.message,
+          variant: newAlert.severity === 'high' ? 'destructive' : 'default',
+        });
+      }
     }
     setLastAlertCount(alerts.length);
-  }, [alerts.length, soundEnabled, lastAlertCount]);
+  }, [alerts.length, soundEnabled, lastAlertCount, toast]);
 
   const fetchAlerts = async () => {
     try {
@@ -46,25 +56,31 @@ const AlertPanel = () => {
         const data = await response.json();
         setConnectionStatus('connected');
         
-        // Transform backend logs to alerts (filter for alert-worthy events)
-        const alertData = data.logs?.filter((log: any) => 
-          log.alert_type && (
-            log.alert_type.toLowerCase().includes('weapon') ||
-            log.alert_type.toLowerCase().includes('suspicious') ||
-            log.alert_type.toLowerCase().includes('anomaly') ||
-            log.alert_type.toLowerCase().includes('breach')
-          )
-        ).map((log: any) => ({
-          id: `${log.timestamp}_${log.alert_type}`,
-          timestamp: new Date(log.timestamp).toLocaleString(),
-          type: getAlertType(log.alert_type),
-          message: log.details?.description || `${log.alert_type} detected`,
-          location: log.details?.location || 'Camera 01 - Main Area',
-          severity: getSeverity(log.alert_type),
-          details: log
-        })) || [];
-        
-        setAlerts(alertData.slice(0, 10)); // Keep only latest 10 alerts
+        if (data.logs && Array.isArray(data.logs)) {
+          const alertData = data.logs
+            .filter((log: any) => 
+              log.alert_type && (
+                log.alert_type.toLowerCase().includes('weapon') ||
+                log.alert_type.toLowerCase().includes('gun') ||
+                log.alert_type.toLowerCase().includes('knife') ||
+                log.alert_type.toLowerCase().includes('suspicious') ||
+                log.alert_type.toLowerCase().includes('anomaly') ||
+                log.alert_type.toLowerCase().includes('breach')
+              )
+            )
+            .map((log: any) => ({
+              id: `${log.timestamp}_${log.alert_type}`,
+              timestamp: new Date(log.timestamp).toLocaleString(),
+              type: getAlertType(log.alert_type),
+              message: log.details?.description || `${log.alert_type} detected`,
+              location: log.details?.location || 'Camera 01 - Main Area',
+              severity: getSeverity(log.alert_type),
+              details: log
+            }))
+            .slice(0, 10);
+          
+          setAlerts(alertData);
+        }
       } else {
         setConnectionStatus('error');
       }
@@ -92,9 +108,23 @@ const AlertPanel = () => {
 
   const playAlertSound = () => {
     try {
-      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmYeAzJq3/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmYeAzJq3/LQdCgGKXHA8dqLOQgXZrjr7aFQEgtTqOT1tWIeBDWS2e/KdCsHKHLB8t2OPAkVZLTH8N2QQAoUXrTp66hVFApGn+DyvmYeAzJq3/LQdCgGKXHA8dqLOQgXZrjr7aFQEgtTqOT1tWIeBDWS2e/KdCsHKHLB8t2OPAkVZLTH8N2QQAoUXrTp66hVFApGn+DyvmYeAzJq3/LQdCgGKXHA8dqLOQgXZrjr7aFQEgtTqOT1tWIeBDWS2e/KdCsHKHLB8t2OPAkVZLTH8N2QQAoUXrTp66hVFApGn+DyvmYeAzJq3/LQdCgGKXHA8dqLOQgXZrjr7aFQEgtTqOT1tWIeBDWS2e/KdCsHKHLB8t2OPAkVZLTH8N2QQAoUXrTp66hVFApGn+DyvmYeAzJq3/LQdCgGKXHA8dqLOQgXZrjr7aFQEgtTqOT1tWIeBDWS2e/KdCsHKHLB8t2OPAkVZLTH8N2QQAoUXrTp66hVFApGn+DyvmYeAzJq3/LQdCgGKXHA8dqLOQgXZrjr7aFQEgtTqOT1tWIeBDWS2e/KdCsHKHLB8t2OPAkVZLTH8N2QQAoUXrTp66hVFApGn+DyvmYeAzJq3/LQdCgGKXHA8dqLOQgXZrjr7aFQEgtTqOT1tWIeBDWS2e/KdCsHKHLB8t2OPAkVZLTH8N2QQAoUXrTp66hVFApGn+DyvmYeAzJq3/LQdCgGKXHA8dqLOQgXZrjr7aFQEgtTqOT1tWIeBDWS2e/KdCsHKHLB8t2OPAkVZLTH8N2QQAoUXrTp66hVFApGn+DyvmYeAzJq3/');
-      audio.volume = 0.3;
-      audio.play().catch(() => {}); // Ignore audio errors
+      // Create a more professional alert sound
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
     } catch (error) {
       console.error('Failed to play alert sound:', error);
     }
@@ -102,6 +132,18 @@ const AlertPanel = () => {
 
   const removeAlert = (id: string) => {
     setAlerts(prev => prev.filter(alert => alert.id !== id));
+    toast({
+      title: "Alert Dismissed",
+      description: "Alert has been removed from the panel",
+    });
+  };
+
+  const toggleSound = () => {
+    setSoundEnabled(!soundEnabled);
+    toast({
+      title: soundEnabled ? "Sound Disabled" : "Sound Enabled",
+      description: `Alert notifications are now ${soundEnabled ? 'muted' : 'active'}`,
+    });
   };
 
   const getSeverityColor = (severity: string) => {
@@ -114,7 +156,7 @@ const AlertPanel = () => {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'weapon': return '🔪';
+      case 'weapon': return '⚔️';
       case 'suspicious': return '👁️';
       case 'breach': return '🚨';
       case 'anomaly': return '⚠️';
@@ -146,12 +188,13 @@ const AlertPanel = () => {
             </div>
           )}
           <motion.button
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            className={`text-xs netra-button-secondary px-3 py-1 ${!soundEnabled ? 'opacity-50' : ''}`}
+            onClick={toggleSound}
+            className={`text-xs netra-button-secondary px-3 py-1 flex items-center space-x-2 ${!soundEnabled ? 'opacity-50' : ''}`}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            {soundEnabled ? '🔊' : '🔇'} SOUND
+            {soundEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
+            <span>SOUND</span>
           </motion.button>
         </div>
       </div>

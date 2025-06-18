@@ -2,13 +2,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Video, Camera, AlertTriangle, RefreshCw } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const LiveFeed = () => {
   const [isStreamActive, setIsStreamActive] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const [lastUpdate, setLastUpdate] = useState<string>('');
+  const [error, setError] = useState<string>('');
   const imgRef = useRef<HTMLImageElement>(null);
   const intervalRef = useRef<NodeJS.Timeout>();
+  const { toast } = useToast();
 
   const BACKEND_URL = 'http://localhost:8000';
 
@@ -26,6 +29,7 @@ const LiveFeed = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     
     setConnectionStatus('connecting');
+    setError('');
     
     intervalRef.current = setInterval(async () => {
       try {
@@ -41,16 +45,30 @@ const LiveFeed = () => {
           const imageUrl = URL.createObjectURL(blob);
           
           if (imgRef.current) {
+            // Clean up previous object URL
+            if (imgRef.current.src.startsWith('blob:')) {
+              URL.revokeObjectURL(imgRef.current.src);
+            }
             imgRef.current.src = imageUrl;
             setConnectionStatus('connected');
             setLastUpdate(new Date().toLocaleTimeString());
+            setError('');
           }
         } else {
-          setConnectionStatus('error');
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
       } catch (error) {
         console.error('Failed to fetch frame:', error);
         setConnectionStatus('error');
+        setError(error instanceof Error ? error.message : 'Unknown error');
+        
+        if (error instanceof Error && error.message.includes('fetch')) {
+          toast({
+            title: "Connection Error",
+            description: "Failed to connect to backend. Make sure it's running on localhost:8000",
+            variant: "destructive",
+          });
+        }
       }
     }, 100); // Update every 100ms for smooth video
   };
@@ -60,7 +78,29 @@ const LiveFeed = () => {
       clearInterval(intervalRef.current);
       intervalRef.current = undefined;
     }
+    
+    // Clean up object URL
+    if (imgRef.current && imgRef.current.src.startsWith('blob:')) {
+      URL.revokeObjectURL(imgRef.current.src);
+      imgRef.current.src = '';
+    }
+    
     setConnectionStatus('disconnected');
+    setError('');
+  };
+
+  const handleReconnect = () => {
+    toast({
+      title: "Reconnecting...",
+      description: "Attempting to reconnect to video stream",
+    });
+    
+    stopStream();
+    setTimeout(() => {
+      if (isStreamActive) {
+        startStream();
+      }
+    }, 1000);
   };
 
   const getStatusColor = () => {
@@ -83,7 +123,6 @@ const LiveFeed = () => {
 
   return (
     <div className="space-y-6">
-      {/* Video Feed */}
       <motion.div 
         className="netra-panel"
         initial={{ scale: 0.9, opacity: 0 }}
@@ -112,36 +151,35 @@ const LiveFeed = () => {
         </div>
 
         <div className="relative aspect-video bg-netra-bg rounded border border-netra-border overflow-hidden">
-          {/* Live video stream */}
           <img
             ref={imgRef}
             alt="Live Feed"
-            className="w-full h-full object-contain"
-            style={{ display: isStreamActive ? 'block' : 'none' }}
+            className={`w-full h-full object-contain ${isStreamActive ? 'block' : 'hidden'}`}
           />
           
-          {/* Placeholder when stream is off */}
           {!isStreamActive && (
             <div className="absolute inset-0 bg-gradient-to-br from-netra-bg-secondary to-netra-bg flex items-center justify-center">
-              <Camera className="w-16 h-16 text-netra-text-secondary" />
+              <div className="text-center">
+                <Camera className="w-16 h-16 text-netra-text-secondary mx-auto mb-4" />
+                <p className="text-netra-text-secondary">Click "START STREAM" to begin monitoring</p>
+              </div>
             </div>
           )}
           
-          {/* Stream overlay */}
-          <div className="absolute top-4 left-4 bg-black/70 px-3 py-1 rounded text-xs text-netra-success">
-            CAM-01 | Backend: {BACKEND_URL}
-          </div>
-          
-          {/* Connection status overlay */}
-          {connectionStatus === 'error' && (
+          {connectionStatus === 'error' && isStreamActive && (
             <div className="absolute inset-0 bg-netra-danger/20 flex items-center justify-center">
               <div className="text-center text-netra-danger">
                 <AlertTriangle className="w-12 h-12 mx-auto mb-2" />
                 <div className="text-sm font-medium">Backend Connection Failed</div>
-                <div className="text-xs">Check if backend is running on {BACKEND_URL}</div>
+                <div className="text-xs">{error}</div>
+                <div className="text-xs mt-1">Check if backend is running on {BACKEND_URL}</div>
               </div>
             </div>
           )}
+          
+          <div className="absolute top-4 left-4 bg-black/70 px-3 py-1 rounded text-xs text-netra-success">
+            CAM-01 | Backend: {BACKEND_URL}
+          </div>
         </div>
 
         <div className="flex space-x-4 mt-4">
@@ -156,10 +194,7 @@ const LiveFeed = () => {
           
           {isStreamActive && (
             <motion.button
-              onClick={() => {
-                stopStream();
-                setTimeout(startStream, 500);
-              }}
+              onClick={handleReconnect}
               className="netra-button-secondary flex items-center space-x-2"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
