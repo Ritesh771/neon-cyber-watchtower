@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Video, Camera, AlertTriangle, RefreshCw } from 'lucide-react';
