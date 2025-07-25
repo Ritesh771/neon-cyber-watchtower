@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, X, Bell, AlertCircle, Volume2, VolumeX } from 'lucide-react';
